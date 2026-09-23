@@ -4,8 +4,7 @@
 
 - Removed visual separators around the Windows autostart section.
 - Removed the DPAPI explanatory footer text and save/reconnect footer hint.
-- Rebalanced vertical spacing so the settings page keeps clear visual hierarchy without divider lines.
-## 1.3.0 - 2026-09-23
+- Rebalanced vertical spacing so the settings page keeps clear visual hierarchy without divider lines.- Unified field heading typography, including the autostart setting.`r`n`r`n## 1.3.0 - 2026-09-23
 
 - Rebuilt the settings UI from WinForms to WPF.
 - Added WPF-UI Fluent styling and native Windows 11 controls.
@@ -42,6 +41,7 @@
 - Bemfa TCP subscription, heartbeat and reconnect.
 - Windows WMI internal-display brightness control.
 - User-level logon autostart.
+
 
 
 

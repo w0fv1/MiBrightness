@@ -208,11 +208,13 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel>
+                                <TextBlock Text="开机自启"
+                                           Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBlock Text="登录 Windows 后自动启动"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"/>
+                                           FontSize="13"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                 <TextBlock Text="使用当前用户的计划任务启动，不需要管理员权限"
-                                           Margin="0,4,0,0"
+                                           Margin="0,3,0,0"
                                            FontSize="12"
                                            Foreground="{StaticResource SubtleTextBrush}"/>
                             </StackPanel>
