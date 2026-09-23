@@ -201,9 +201,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <Separator Margin="0,20,0,18"/>
-
-                        <Grid>
+                        <Grid Margin="0,24,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -224,9 +222,7 @@
                                              VerticalAlignment="Center"/>
                         </Grid>
 
-                        <Separator Margin="0,20,0,18"/>
-
-                        <WrapPanel>
+                        <WrapPanel Margin="0,22,0,0">
                             <Button Content="设置巴法私钥"
                                     Padding="16,8"
                                     Margin="0,0,10,10"
@@ -240,27 +236,17 @@
                                     Margin="0,0,10,10"
                                     Click="OpenLogs_Click"/>
                         </WrapPanel>
-
-                        <TextBlock Text="私钥使用 Windows DPAPI 加密，仅当前 Windows 用户可解密。"
-                                   Margin="0,4,0,0"
-                                   FontSize="12"
-                                   Foreground="{StaticResource SubtleTextBrush}"/>
                     </StackPanel>
                 </ui:Card>
 
-                <Grid Grid.Row="4" Margin="0,4,0,0">
+                <Grid Grid.Row="4" Margin="0,14,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="12"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
-                    <TextBlock x:Name="SaveHintText"
-                               VerticalAlignment="Center"
-                               FontSize="12"
-                               Foreground="{StaticResource SubtleTextBrush}"
-                               Text="配置保存后会自动重新连接。"/>
+                    <Border/>
 
                     <Button Grid.Column="1"
                             Content="关闭"

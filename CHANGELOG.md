@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 - 2026-09-23
+
+- Removed visual separators around the Windows autostart section.
+- Removed the DPAPI explanatory footer text and save/reconnect footer hint.
+- Rebalanced vertical spacing so the settings page keeps clear visual hierarchy without divider lines.
 ## 1.3.0 - 2026-09-23
 
 - Rebuilt the settings UI from WinForms to WPF.
@@ -37,5 +42,6 @@
 - Bemfa TCP subscription, heartbeat and reconnect.
 - Windows WMI internal-display brightness control.
 - User-level logon autostart.
+
 
 

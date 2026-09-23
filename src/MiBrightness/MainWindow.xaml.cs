@@ -123,7 +123,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             int actual = BridgeRuntime.SetBrightness((int)Math.Round(BrightnessSlider.Value));
             BrightnessSlider.Value = actual;
             BrightnessText.Text = actual + "%";
-            SaveHintText.Text = $"亮度测试成功，当前 {actual}%";
         }
         catch (Exception ex)
         {
@@ -138,7 +137,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     private void Reconnect_Click(object sender, RoutedEventArgs e)
     {
         BridgeRuntime.RestartConnection();
-        SaveHintText.Text = "已请求重新连接。";
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -176,8 +174,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             BridgeRuntime.SaveConfig(cfg);
             BridgeRuntime.SetAutoStart(AutoStartToggle.IsChecked == true);
             BridgeRuntime.RestartConnection();
-
-            SaveHintText.Text = "✓ 已保存，正在重新连接。";
         }
         catch (Exception ex)
         {
@@ -256,7 +252,6 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             {
                 BridgeRuntime.SaveSecret(password.Password);
                 BridgeRuntime.RestartConnection();
-                SaveHintText.Text = "✓ 私钥已保存，正在重新连接。";
                 dialog.DialogResult = true;
             }
             catch (Exception ex)
