@@ -666,119 +666,118 @@ internal sealed class TrayContext : ApplicationContext
     }
 }
 
+internal sealed class UiCard : Panel
+{
+    public UiCard()
+    {
+        BackColor = Color.White;
+        Padding = new Padding(22, 18, 22, 18);
+        Margin = new Padding(0, 0, 0, 14);
+        BorderStyle = BorderStyle.None;
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        using var pen = new Pen(Color.FromArgb(226, 230, 236));
+        var r = ClientRectangle;
+        r.Width -= 1;
+        r.Height -= 1;
+        e.Graphics.DrawRectangle(pen, r);
+    }
+}
+
 internal sealed class SettingsForm : Form
 {
+    private static readonly Color Accent = Color.FromArgb(0, 120, 212);
+    private static readonly Color AccentHover = Color.FromArgb(16, 110, 190);
+    private static readonly Color TextPrimary = Color.FromArgb(32, 33, 36);
+    private static readonly Color TextSecondary = Color.FromArgb(95, 99, 104);
+    private static readonly Color Surface = Color.FromArgb(246, 248, 251);
+    private static readonly Color Success = Color.FromArgb(16, 124, 65);
+    private static readonly Color Danger = Color.FromArgb(196, 43, 28);
+
     private readonly TextBox topicBox = new();
     private readonly ComboBox interfaceBox = new();
     private readonly NumericUpDown heartbeatBox = new();
     private readonly NumericUpDown defaultBrightnessBox = new();
-    private readonly Label statusLabel = new();
-    private readonly Label detailLabel = new();
-    private readonly NumericUpDown testBrightnessBox = new();
+    private readonly Label statusBadge = new();
+    private readonly Label statusDetail = new();
+    private readonly Label brightnessValue = new();
+    private readonly TrackBar brightnessSlider = new();
+    private readonly CheckBox autoStartBox = new();
+    private readonly Button saveButton;
     private readonly System.Windows.Forms.Timer timer = new();
 
     public SettingsForm()
     {
-        Text = "MiBrightness 配置";
+        Text = "MiBrightness";
         StartPosition = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
-        MinimizeBox = false;
-        ClientSize = new Size(520, 420);
-        Font = new Font("Microsoft YaHei UI", 9F);
+        MinimizeBox = true;
+        ClientSize = new Size(860, 720);
+        MinimumSize = MaximumSize = new Size(876, 759);
+        Font = new Font("Segoe UI", 10F);
+        BackColor = Surface;
+        AutoScaleMode = AutoScaleMode.Dpi;
 
         var cfg = Program.LoadConfig();
 
-        var table = new TableLayoutPanel
+        var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(18),
-            ColumnCount = 2,
-            RowCount = 9
+            Padding = new Padding(28, 24, 28, 20),
+            ColumnCount = 1,
+            RowCount = 6,
+            BackColor = Surface
         };
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 125));
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 158));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 182));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
 
-        topicBox.Text = cfg.Topic;
-        topicBox.Dock = DockStyle.Fill;
+        root.Controls.Add(BuildHeader(), 0, 0);
+        root.Controls.Add(BuildConnectionCard(cfg), 0, 1);
+        root.Controls.Add(BuildBrightnessCard(cfg), 0, 2);
+        root.Controls.Add(BuildAdvancedCard(cfg), 0, 3);
 
-        interfaceBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        interfaceBox.Items.AddRange(Program.GetUsableInterfaces());
-        if (interfaceBox.Items.Contains(cfg.InterfaceAlias)) interfaceBox.SelectedItem = cfg.InterfaceAlias;
-        else if (interfaceBox.Items.Count > 0) interfaceBox.SelectedIndex = 0;
-        interfaceBox.Dock = DockStyle.Fill;
-
-        heartbeatBox.Minimum = 10;
-        heartbeatBox.Maximum = 300;
-        heartbeatBox.Value = Math.Clamp(cfg.HeartbeatSeconds, 10, 300);
-        heartbeatBox.Dock = DockStyle.Left;
-        heartbeatBox.Width = 120;
-
-        defaultBrightnessBox.Minimum = 1;
-        defaultBrightnessBox.Maximum = 100;
-        defaultBrightnessBox.Value = Math.Clamp(cfg.DefaultBrightness, 1, 100);
-        defaultBrightnessBox.Dock = DockStyle.Left;
-        defaultBrightnessBox.Width = 120;
-
-        testBrightnessBox.Minimum = 0;
-        testBrightnessBox.Maximum = 100;
-        try { testBrightnessBox.Value = Program.GetBrightness(); } catch { testBrightnessBox.Value = 50; }
-        testBrightnessBox.Width = 90;
-
-        AddRow(table, 0, "巴法 Topic", topicBox);
-        AddRow(table, 1, "直连网卡", interfaceBox);
-        AddRow(table, 2, "心跳间隔（秒）", heartbeatBox);
-        AddRow(table, 3, "默认亮度", defaultBrightnessBox);
-
-        var testPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        testPanel.Controls.Add(testBrightnessBox);
-        var testBtn = new Button { Text = "测试亮度", AutoSize = true };
-        testBtn.Click += (_, _) =>
+        var hint = new Label
         {
-            try
-            {
-                int actual = Program.SetBrightness((int)testBrightnessBox.Value);
-                statusLabel.Text = $"测试成功，当前亮度 {actual}%";
-            }
-            catch (Exception ex) { MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            Text = "配置和加密私钥保存在当前 Windows 用户目录。保存后后台连接会自动重启。",
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Font = new Font("Segoe UI", 9F),
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(2, 10, 0, 0)
         };
-        testPanel.Controls.Add(testBtn);
-        AddRow(table, 4, "屏幕测试", testPanel);
+        root.Controls.Add(hint, 0, 4);
 
-        statusLabel.AutoSize = true;
-        statusLabel.Font = new Font(Font, FontStyle.Bold);
-        detailLabel.AutoSize = true;
-        detailLabel.ForeColor = SystemColors.GrayText;
-        var statePanel = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, Dock = DockStyle.Fill, AutoSize = true };
-        statePanel.Controls.Add(statusLabel);
-        statePanel.Controls.Add(detailLabel);
-        AddRow(table, 5, "运行状态", statePanel);
+        var footer = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(0, 9, 0, 0),
+            WrapContents = false
+        };
 
-        var keyBtn = new Button { Text = "设置 / 更换巴法私钥...", AutoSize = true };
-        keyBtn.Click += (_, _) => SetSecret();
-        AddRow(table, 6, "凭据", keyBtn);
+        saveButton = PrimaryButton("保存并重新连接", 150);
+        saveButton.Click += (_, _) => Save();
 
-        var toolsPanel = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        var configBtn = new Button { Text = "打开 config.json", AutoSize = true };
-        configBtn.Click += (_, _) => Program.OpenConfigFile();
-        var logBtn = new Button { Text = "打开日志目录", AutoSize = true };
-        logBtn.Click += (_, _) => Program.OpenLogFolder();
-        toolsPanel.Controls.Add(configBtn);
-        toolsPanel.Controls.Add(logBtn);
-        AddRow(table, 7, "高级", toolsPanel);
+        var closeButton = SecondaryButton("关闭", 92);
+        closeButton.DialogResult = DialogResult.Cancel;
 
-        var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, Dock = DockStyle.Fill, AutoSize = true };
-        var cancel = new Button { Text = "关闭", DialogResult = DialogResult.Cancel, AutoSize = true };
-        var save = new Button { Text = "保存并重新连接", AutoSize = true };
-        save.Click += (_, _) => Save();
-        buttons.Controls.Add(cancel);
-        buttons.Controls.Add(save);
-        table.Controls.Add(buttons, 0, 8);
-        table.SetColumnSpan(buttons, 2);
+        footer.Controls.Add(saveButton);
+        footer.Controls.Add(closeButton);
+        root.Controls.Add(footer, 0, 5);
 
-        Controls.Add(table);
-        AcceptButton = save;
-        CancelButton = cancel;
+        Controls.Add(root);
+        AcceptButton = saveButton;
+        CancelButton = closeButton;
 
         timer.Interval = 1000;
         timer.Tick += (_, _) => RefreshStatus();
@@ -786,21 +785,251 @@ internal sealed class SettingsForm : Form
         RefreshStatus();
     }
 
-    private static void AddRow(TableLayoutPanel table, int row, string label, Control control)
+    private Control BuildHeader()
     {
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        var l = new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, Padding = new Padding(0, 7, 0, 0) };
-        table.Controls.Add(l, 0, row);
-        table.Controls.Add(control, 1, row);
+        var panel = new Panel { Dock = DockStyle.Fill, BackColor = Surface };
+
+        var title = new Label
+        {
+            Text = "MiBrightness",
+            AutoSize = true,
+            Font = new Font("Segoe UI Semibold", 21F),
+            ForeColor = TextPrimary,
+            Location = new Point(0, 2)
+        };
+
+        var subtitle = new Label
+        {
+            Text = "小爱同学 × 巴法云 × Windows 内屏亮度",
+            AutoSize = true,
+            Font = new Font("Microsoft YaHei UI", 9.5F),
+            ForeColor = TextSecondary,
+            Location = new Point(2, 46)
+        };
+
+        statusBadge.AutoSize = true;
+        statusBadge.Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Bold);
+        statusBadge.Padding = new Padding(12, 7, 12, 7);
+        statusBadge.TextAlign = ContentAlignment.MiddleCenter;
+        statusBadge.Location = new Point(610, 12);
+
+        panel.Controls.Add(title);
+        panel.Controls.Add(subtitle);
+        panel.Controls.Add(statusBadge);
+        return panel;
+    }
+
+    private Control BuildConnectionCard(AppConfig cfg)
+    {
+        var card = new UiCard { Dock = DockStyle.Fill };
+
+        var title = SectionTitle("连接");
+        title.Location = new Point(22, 17);
+        card.Controls.Add(title);
+
+        var topicLabel = FieldLabel("巴法 Topic");
+        topicLabel.Location = new Point(24, 59);
+        card.Controls.Add(topicLabel);
+
+        topicBox.Text = cfg.Topic;
+        topicBox.Location = new Point(142, 55);
+        topicBox.Size = new Size(285, 28);
+        topicBox.BorderStyle = BorderStyle.FixedSingle;
+        card.Controls.Add(topicBox);
+
+        var nicLabel = FieldLabel("直连网卡");
+        nicLabel.Location = new Point(455, 59);
+        card.Controls.Add(nicLabel);
+
+        interfaceBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        interfaceBox.FlatStyle = FlatStyle.System;
+        interfaceBox.Items.AddRange(Program.GetUsableInterfaces());
+        if (interfaceBox.Items.Contains(cfg.InterfaceAlias)) interfaceBox.SelectedItem = cfg.InterfaceAlias;
+        else if (interfaceBox.Items.Count > 0) interfaceBox.SelectedIndex = 0;
+        interfaceBox.Location = new Point(545, 55);
+        interfaceBox.Size = new Size(205, 28);
+        card.Controls.Add(interfaceBox);
+
+        statusDetail.AutoEllipsis = true;
+        statusDetail.ForeColor = TextSecondary;
+        statusDetail.Font = new Font("Microsoft YaHei UI", 9F);
+        statusDetail.Location = new Point(24, 101);
+        statusDetail.Size = new Size(690, 36);
+        card.Controls.Add(statusDetail);
+
+        var reconnect = LinkButton("重新连接");
+        reconnect.Location = new Point(698, 99);
+        reconnect.Click += (_, _) =>
+        {
+            Program.RestartConnection();
+            statusDetail.Text = "正在重新连接...";
+        };
+        card.Controls.Add(reconnect);
+
+        return card;
+    }
+
+    private Control BuildBrightnessCard(AppConfig cfg)
+    {
+        var card = new UiCard { Dock = DockStyle.Fill };
+
+        var title = SectionTitle("屏幕亮度");
+        title.Location = new Point(22, 17);
+        card.Controls.Add(title);
+
+        brightnessValue.Text = "--%";
+        brightnessValue.Font = new Font("Segoe UI Semibold", 18F);
+        brightnessValue.ForeColor = Accent;
+        brightnessValue.AutoSize = true;
+        brightnessValue.Location = new Point(705, 16);
+        card.Controls.Add(brightnessValue);
+
+        brightnessSlider.Minimum = 0;
+        brightnessSlider.Maximum = 100;
+        brightnessSlider.TickFrequency = 10;
+        brightnessSlider.SmallChange = 1;
+        brightnessSlider.LargeChange = 10;
+        brightnessSlider.AutoSize = false;
+        brightnessSlider.Location = new Point(23, 58);
+        brightnessSlider.Size = new Size(620, 44);
+        try { brightnessSlider.Value = Program.GetBrightness(); } catch { brightnessSlider.Value = 50; }
+
+        var liveValue = new Label
+        {
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Location = new Point(24, 108)
+        };
+        liveValue.Text = $"测试值：{brightnessSlider.Value}%";
+        brightnessSlider.ValueChanged += (_, _) => liveValue.Text = $"测试值：{brightnessSlider.Value}%";
+        card.Controls.Add(brightnessSlider);
+        card.Controls.Add(liveValue);
+
+        var testButton = SecondaryButton("应用测试亮度", 126);
+        testButton.Location = new Point(650, 66);
+        testButton.Click += (_, _) =>
+        {
+            try
+            {
+                int actual = Program.SetBrightness(brightnessSlider.Value);
+                brightnessValue.Text = actual + "%";
+                statusDetail.Text = $"亮度测试成功 · 当前 {actual}%";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        };
+        card.Controls.Add(testButton);
+
+        return card;
+    }
+
+    private Control BuildAdvancedCard(AppConfig cfg)
+    {
+        var card = new UiCard { Dock = DockStyle.Fill };
+
+        var title = SectionTitle("高级设置");
+        title.Location = new Point(22, 17);
+        card.Controls.Add(title);
+
+        var hbLabel = FieldLabel("心跳间隔");
+        hbLabel.Location = new Point(24, 61);
+        card.Controls.Add(hbLabel);
+
+        heartbeatBox.Minimum = 10;
+        heartbeatBox.Maximum = 300;
+        heartbeatBox.Value = Math.Clamp(cfg.HeartbeatSeconds, 10, 300);
+        heartbeatBox.Location = new Point(119, 56);
+        heartbeatBox.Size = new Size(76, 28);
+        card.Controls.Add(heartbeatBox);
+
+        var sec = new Label
+        {
+            Text = "秒",
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Location = new Point(201, 61)
+        };
+        card.Controls.Add(sec);
+
+        var defLabel = FieldLabel("开机默认亮度");
+        defLabel.Location = new Point(270, 61);
+        card.Controls.Add(defLabel);
+
+        defaultBrightnessBox.Minimum = 1;
+        defaultBrightnessBox.Maximum = 100;
+        defaultBrightnessBox.Value = Math.Clamp(cfg.DefaultBrightness, 1, 100);
+        defaultBrightnessBox.Location = new Point(385, 56);
+        defaultBrightnessBox.Size = new Size(76, 28);
+        card.Controls.Add(defaultBrightnessBox);
+
+        var pct = new Label
+        {
+            Text = "%",
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Location = new Point(467, 61)
+        };
+        card.Controls.Add(pct);
+
+        autoStartBox.Text = "登录 Windows 后自动启动";
+        autoStartBox.Checked = Program.IsAutoStartEnabled();
+        autoStartBox.AutoSize = true;
+        autoStartBox.Location = new Point(540, 59);
+        card.Controls.Add(autoStartBox);
+
+        var keyButton = SecondaryButton("设置巴法私钥", 126);
+        keyButton.Location = new Point(24, 116);
+        keyButton.Click += (_, _) => SetSecret();
+        card.Controls.Add(keyButton);
+
+        var configButton = SecondaryButton("打开 config.json", 132);
+        configButton.Location = new Point(162, 116);
+        configButton.Click += (_, _) => Program.OpenConfigFile();
+        card.Controls.Add(configButton);
+
+        var logButton = SecondaryButton("打开日志", 104);
+        logButton.Location = new Point(306, 116);
+        logButton.Click += (_, _) => Program.OpenLogFolder();
+        card.Controls.Add(logButton);
+
+        var privacy = new Label
+        {
+            Text = "DPAPI 加密，仅当前用户可解密",
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Font = new Font("Microsoft YaHei UI", 8.5F),
+            Location = new Point(455, 124)
+        };
+        card.Controls.Add(privacy);
+
+        return card;
     }
 
     private void RefreshStatus()
     {
         var s = Program.GetState();
-        statusLabel.Text = s.Online ? $"在线 · {s.Brightness}%" : s.Status;
-        detailLabel.Text = string.IsNullOrWhiteSpace(s.LastError)
-            ? s.Endpoint
-            : s.Endpoint + Environment.NewLine + "最近错误：" + s.LastError;
+
+        if (s.Online)
+        {
+            statusBadge.Text = $"● 在线 {s.Brightness}%";
+            statusBadge.ForeColor = Success;
+            statusBadge.BackColor = Color.FromArgb(226, 246, 234);
+        }
+        else
+        {
+            statusBadge.Text = "●  " + s.Status;
+            statusBadge.ForeColor = Danger;
+            statusBadge.BackColor = Color.FromArgb(253, 235, 233);
+        }
+
+        brightnessValue.Text = s.Brightness >= 0 ? s.Brightness + "%" : "--%";
+
+        string endpoint = string.IsNullOrWhiteSpace(s.Endpoint) ? "尚未建立连接" : s.Endpoint;
+        statusDetail.Text = string.IsNullOrWhiteSpace(s.LastError)
+            ? endpoint
+            : endpoint + "    ·    最近错误：" + s.LastError;
     }
 
     private void Save()
@@ -808,41 +1037,94 @@ internal sealed class SettingsForm : Form
         if (string.IsNullOrWhiteSpace(topicBox.Text))
         {
             MessageBox.Show("Topic 不能为空。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-        if (interfaceBox.SelectedItem is null)
-        {
-            MessageBox.Show("请选择一个直连网卡。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            topicBox.Focus();
             return;
         }
 
-        var cfg = Program.LoadConfig();
-        cfg.Topic = topicBox.Text.Trim();
-        cfg.InterfaceAlias = interfaceBox.SelectedItem.ToString()!;
-        cfg.HeartbeatSeconds = (int)heartbeatBox.Value;
-        cfg.DefaultBrightness = (int)defaultBrightnessBox.Value;
-        Program.SaveConfig(cfg);
-        Program.RestartConnection();
-        statusLabel.Text = "配置已保存，正在重新连接...";
+        if (interfaceBox.SelectedItem is null)
+        {
+            MessageBox.Show("请选择一个真实联网网卡。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            interfaceBox.Focus();
+            return;
+        }
+
+        try
+        {
+            var cfg = Program.LoadConfig();
+            cfg.Topic = topicBox.Text.Trim();
+            cfg.InterfaceAlias = interfaceBox.SelectedItem.ToString()!;
+            cfg.HeartbeatSeconds = (int)heartbeatBox.Value;
+            cfg.DefaultBrightness = (int)defaultBrightnessBox.Value;
+            Program.SaveConfig(cfg);
+            Program.SetAutoStart(autoStartBox.Checked);
+            Program.RestartConnection();
+
+            saveButton.Text = "已保存 ✓";
+            var reset = new System.Windows.Forms.Timer { Interval = 1400 };
+            reset.Tick += (_, _) =>
+            {
+                reset.Stop();
+                reset.Dispose();
+                saveButton.Text = "保存并重新连接";
+            };
+            reset.Start();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void SetSecret()
     {
         using var dialog = new Form
         {
-            Text = "设置巴法私钥",
+            Text = "巴法私钥",
             StartPosition = FormStartPosition.CenterParent,
             FormBorderStyle = FormBorderStyle.FixedDialog,
             MaximizeBox = false,
             MinimizeBox = false,
-            ClientSize = new Size(430, 145),
-            Font = Font
+            ClientSize = new Size(480, 205),
+            BackColor = Surface,
+            Font = new Font("Microsoft YaHei UI", 9.5F)
         };
-        var label = new Label { Text = "巴法私钥", Left = 18, Top = 24, AutoSize = true };
-        var box = new TextBox { Left = 95, Top = 20, Width = 315, UseSystemPasswordChar = true };
-        var ok = new Button { Text = "保存", Left = 245, Top = 82, Width = 80, DialogResult = DialogResult.OK };
-        var cancel = new Button { Text = "取消", Left = 330, Top = 82, Width = 80, DialogResult = DialogResult.Cancel };
-        dialog.Controls.AddRange(new Control[] { label, box, ok, cancel });
+
+        var heading = new Label
+        {
+            Text = "设置巴法云私钥",
+            AutoSize = true,
+            Font = new Font("Microsoft YaHei UI", 13F, FontStyle.Bold),
+            ForeColor = TextPrimary,
+            Location = new Point(24, 22)
+        };
+
+        var help = new Label
+        {
+            Text = "私钥只会使用 Windows DPAPI 加密保存在当前用户目录。",
+            AutoSize = true,
+            ForeColor = TextSecondary,
+            Location = new Point(25, 56)
+        };
+
+        var box = new TextBox
+        {
+            Left = 26,
+            Top = 88,
+            Width = 428,
+            Height = 28,
+            UseSystemPasswordChar = true,
+            BorderStyle = BorderStyle.FixedSingle
+        };
+
+        var ok = PrimaryButton("保存私钥", 100);
+        ok.Location = new Point(354, 142);
+        ok.DialogResult = DialogResult.OK;
+
+        var cancel = SecondaryButton("取消", 82);
+        cancel.Location = new Point(262, 142);
+        cancel.DialogResult = DialogResult.Cancel;
+
+        dialog.Controls.AddRange(new Control[] { heading, help, box, ok, cancel });
         dialog.AcceptButton = ok;
         dialog.CancelButton = cancel;
 
@@ -852,12 +1134,87 @@ internal sealed class SettingsForm : Form
         {
             Program.SaveSecret(box.Text);
             Program.RestartConnection();
-            statusLabel.Text = "私钥已保存，正在重新连接...";
+            statusDetail.Text = "私钥已保存，正在重新连接...";
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private static Label SectionTitle(string text) => new()
+    {
+        Text = text,
+        AutoSize = true,
+        Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Bold),
+        ForeColor = TextPrimary
+    };
+
+    private static Label FieldLabel(string text) => new()
+    {
+        Text = text,
+        AutoSize = true,
+        Font = new Font("Microsoft YaHei UI", 9F),
+        ForeColor = TextSecondary
+    };
+
+    private static Button PrimaryButton(string text, int width)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = 36,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Accent,
+            ForeColor = Color.White,
+            Cursor = Cursors.Hand,
+            Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold),
+            Margin = new Padding(8, 0, 0, 0)
+        };
+        button.FlatAppearance.BorderSize = 0;
+        button.MouseEnter += (_, _) => button.BackColor = AccentHover;
+        button.MouseLeave += (_, _) => button.BackColor = Accent;
+        return button;
+    }
+
+    private static Button SecondaryButton(string text, int width)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = 34,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = TextPrimary,
+            Cursor = Cursors.Hand,
+            Font = new Font("Microsoft YaHei UI", 9F),
+            Margin = new Padding(8, 0, 0, 0)
+        };
+        button.FlatAppearance.BorderColor = Color.FromArgb(202, 207, 214);
+        button.FlatAppearance.BorderSize = 1;
+        button.MouseEnter += (_, _) => button.BackColor = Color.FromArgb(245, 247, 250);
+        button.MouseLeave += (_, _) => button.BackColor = Color.White;
+        return button;
+    }
+
+    private static Button LinkButton(string text)
+    {
+        var button = new Button
+        {
+            Text = text,
+            Width = 88,
+            Height = 28,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Accent,
+            Cursor = Cursors.Hand,
+            Font = new Font("Microsoft YaHei UI", 8.5F),
+            TabStop = false
+        };
+        button.FlatAppearance.BorderSize = 0;
+        return button;
     }
 
     protected override void Dispose(bool disposing)
@@ -866,4 +1223,3 @@ internal sealed class SettingsForm : Form
         base.Dispose(disposing);
     }
 }
-

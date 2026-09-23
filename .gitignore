@@ -12,3 +12,6 @@ config.json
 restart.flag
 status.json
 *.log
+
+artifacts-ui-*/
+

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 - 2026-09-23
+
+- Redesigned the configuration UI with Windows 11-inspired cards and spacing.
+- Added a clear online/offline status badge and current brightness indicator.
+- Added a brightness slider with one-click test application.
+- Improved connection, autostart, credential and advanced settings layout.
+- Improved high-DPI behavior for 200% Windows display scaling.
+- Kept all existing Bemfa, DPAPI, reconnect and physical-adapter binding behavior.
 ## 1.1.0 - 2026-09-23
 
 - Added Windows system tray UI.
@@ -21,3 +29,4 @@
 - Bemfa TCP subscription, heartbeat and reconnect.
 - Windows WMI internal-display brightness control.
 - User-level logon autostart.
+
