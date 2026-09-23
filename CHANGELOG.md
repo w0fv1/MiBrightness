@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 - 2026-09-23
+
+- Rebuilt the settings UI from WinForms to WPF.
+- Added WPF-UI Fluent styling and native Windows 11 controls.
+- Replaced fixed pixel positioning with responsive Grid/StackPanel layouts.
+- Fixed high-DPI overlap issues at 150%/200% display scaling.
+- Added a resizable, scrollable settings window.
+- Preserved tray operation, Bemfa TCP bridge, WMI brightness control, DPAPI secret storage and autostart behavior.
 ## 1.2.0 - 2026-09-23
 
 - Redesigned the configuration UI with Windows 11-inspired cards and spacing.
@@ -29,4 +37,5 @@
 - Bemfa TCP subscription, heartbeat and reconnect.
 - Windows WMI internal-display brightness control.
 - User-level logon autostart.
+
 

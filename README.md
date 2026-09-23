@@ -156,3 +156,4 @@ powershell.exe -ExecutionPolicy Bypass -File Uninstall.ps1 -RemoveData
 ## License
 
 MIT
+
