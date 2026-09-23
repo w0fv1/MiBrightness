@@ -28,6 +28,7 @@ internal static class BridgeRuntime
     private static BridgeState _state = new(false, "正在启动", 0, "", "");
     private static CancellationTokenSource _bridgeCts = new();
     private static TcpClient? _currentClient;
+    private static bool _isBridgeHost;
 
     internal static event EventHandler<BridgeState>? StateChanged;
 
@@ -70,6 +71,20 @@ internal static class BridgeRuntime
 
     internal static BridgeState GetState()
     {
+        if (!_isBridgeHost)
+        {
+            try
+            {
+                if (File.Exists(StatusPath))
+                {
+                    var cached = JsonSerializer.Deserialize<BridgeState>(
+                        File.ReadAllText(StatusPath, Encoding.UTF8));
+                    if (cached is not null) return cached;
+                }
+            }
+            catch { }
+        }
+
         lock (StateLock)
         {
             if (_state.Status != "正在启动") return _state;
@@ -109,14 +124,17 @@ internal static class BridgeRuntime
             };
             snapshot = _state;
 
-            try
+            if (_isBridgeHost)
             {
-                File.WriteAllText(
-                    StatusPath,
-                    JsonSerializer.Serialize(_state),
-                    new UTF8Encoding(false));
+                try
+                {
+                    File.WriteAllText(
+                        StatusPath,
+                        JsonSerializer.Serialize(_state),
+                        new UTF8Encoding(false));
+                }
+                catch { }
             }
-            catch { }
         }
 
         StateChanged?.Invoke(null, snapshot);
@@ -124,6 +142,8 @@ internal static class BridgeRuntime
 
     internal static void StartBridge()
     {
+        _isBridgeHost = true;
+
         if (_bridgeCts.IsCancellationRequested)
             _bridgeCts = new CancellationTokenSource();
 
@@ -133,6 +153,7 @@ internal static class BridgeRuntime
 
     internal static void StopBridge()
     {
+        _isBridgeHost = false;
         try { _bridgeCts.Cancel(); } catch { }
         try { _currentClient?.Close(); } catch { }
     }
@@ -493,7 +514,8 @@ internal static class BridgeRuntime
 
             Thread.Sleep(120);
             int actual = GetBrightness();
-            SetState(brightness: actual);
+            if (_isBridgeHost)
+                SetState(brightness: actual);
             return actual;
         }
 

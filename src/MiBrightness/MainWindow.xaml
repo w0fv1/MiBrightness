@@ -11,7 +11,19 @@
                  ResizeMode="CanResize"
                  Background="{DynamicResource ApplicationBackgroundBrush}">
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0"
+                     Title="MiBrightness"
+                     ShowMinimize="True"
+                     ShowMaximize="False"
+                     ShowClose="True"/>
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <Grid Margin="32,26,32,32">
                 <Grid.RowDefinitions>
@@ -213,10 +225,6 @@
                                 <TextBlock Text="登录 Windows 后自动启动"
                                            FontSize="13"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="使用当前用户的计划任务启动，不需要管理员权限"
-                                           Margin="0,3,0,0"
-                                           FontSize="12"
-                                           Foreground="{StaticResource SubtleTextBrush}"/>
                             </StackPanel>
 
                             <ui:ToggleSwitch x:Name="AutoStartToggle"
