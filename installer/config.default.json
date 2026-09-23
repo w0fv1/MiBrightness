@@ -1,0 +1,9 @@
+{
+  "Topic": "pcbrightness002",
+  "ServerHost": "bemfa.com",
+  "ServerIpFallback": "119.91.109.180",
+  "Port": 8344,
+  "InterfaceAlias": "WLAN",
+  "HeartbeatSeconds": 30,
+  "DefaultBrightness": 80
+}
